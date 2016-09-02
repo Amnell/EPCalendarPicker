@@ -34,6 +34,12 @@ public class EPCalendarPicker: UICollectionViewController {
     public var activityDotColor: UIColor
     public var activityDotSelectionColor: UIColor
     
+    /**
+     The initial date to scroll to when presenting the calendar.
+     Will fallback to today if nil
+     */
+    public var initialDate: NSDate?
+    
     // new options
     public var startDate: NSDate?
     public var hightlightsToday: Bool = true
@@ -67,7 +73,12 @@ public class EPCalendarPicker: UICollectionViewController {
         inititlizeBarButtons()
 
         dispatch_async(dispatch_get_main_queue()) { () -> Void in
-            self.scrollToToday()
+            if let initialDate = self.initialDate {
+                self.scrollToMonthForDate(initialDate)
+            }
+            else {
+                self.scrollToToday()
+            }
         }
         
         if backgroundImage != nil {
@@ -125,8 +136,9 @@ public class EPCalendarPicker: UICollectionViewController {
         self.init(startYear: EPDefaults.startYear, endYear: EPDefaults.endYear, multiSelection: multiSelection, selectedDates: nil)
     }
     
-    public init(startYear: Int, endYear: Int, multiSelection: Bool, selectedDates: [NSDate]?) {
+    public init(startYear: Int, endYear: Int, multiSelection: Bool, selectedDates: [NSDate]?, initialDate: NSDate? = nil) {
         
+        self.initialDate = initialDate
         self.startYear = startYear
         self.endYear = endYear
         

@@ -24,7 +24,9 @@ class ViewController: UIViewController, EPCalendarPickerDelegate {
     }
 
     @IBAction func onTouchShowMeCalendarButton(sender: AnyObject) {
-        let calendarPicker = EPCalendarPicker(startYear: 2016, endYear: 2017, multiSelection: true, selectedDates: [])
+        let theDayAfterTomorrow = NSDate().dateByAddingDays(2)
+        
+        let calendarPicker = EPCalendarPicker(startYear: 2016, endYear: 2017, multiSelection: true, selectedDates: [], initialDate: theDayAfterTomorrow)
         calendarPicker.calendarDelegate = self
         calendarPicker.startDate = NSDate()
         calendarPicker.hightlightsToday = true
