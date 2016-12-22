@@ -23,14 +23,21 @@ class ViewController: UIViewController, EPCalendarPickerDelegate {
         // Dispose of any resources that can be recreated.
     }
 
-    @IBAction func onTouchShowMeCalendarButton(_ sender: AnyObject) {
-        let calendarPicker = EPCalendarPicker(startYear: 2016, endYear: 2017, multiSelection: true, selectedDates: [])
+
+    @IBAction func onTouchShowMeCalendarButton(sender: AnyObject) {
+        let theDayAfterTomorrow = NSDate().dateByAddingDays(days: 2)
+        
+        let calendarPicker = EPCalendarPicker(startYear: 2016, endYear: 2017, multiSelection: true, selectedDates: [], initialDate: theDayAfterTomorrow)
         calendarPicker.calendarDelegate = self
         calendarPicker.startDate = NSDate()
         calendarPicker.hightlightsToday = true
         calendarPicker.showsTodaysButton = true
         calendarPicker.hideDaysFromOtherMonth = true
+        
         calendarPicker.tintColor = UIColor.orange
+        calendarPicker.activityDotColor = UIColor.blue
+        calendarPicker.activityDotSelectionColor = UIColor.white
+
 //        calendarPicker.barTintColor = UIColor.greenColor()
         calendarPicker.dayDisabledTintColor = UIColor.gray
         calendarPicker.title = "Date Picker"
@@ -52,6 +59,12 @@ class ViewController: UIViewController, EPCalendarPickerDelegate {
     }
     func epCalendarPicker(_: EPCalendarPicker, didSelectMultipleDate dates : [NSDate]) {
         txtViewDetail.text = "User selected dates: \n\(dates)"
+    }
+    
+    func epCalendarPicker(_: EPCalendarPicker, shouldDisplayActivityDotForDate date: NSDate) -> Bool {
+        let calendar = NSCalendar.current
+        let components = calendar.dateComponents(Set<Calendar.Component>([.day]), from: date as Date)
+        return components.day! % 2 == 0
     }
 
 }

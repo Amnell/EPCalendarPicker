@@ -14,6 +14,7 @@ private let reuseIdentifier = "Cell"
     @objc optional    func epCalendarPicker(_: EPCalendarPicker, didCancel error : NSError)
     @objc optional    func epCalendarPicker(_: EPCalendarPicker, didSelectDate date : NSDate)
     @objc optional    func epCalendarPicker(_: EPCalendarPicker, didSelectMultipleDate dates : [NSDate])
+    @objc optional    func epCalendarPicker(_: EPCalendarPicker, shouldDisplayActivityDotForDate date : NSDate) -> Bool
 }
 
 open class EPCalendarPicker: UICollectionViewController {
@@ -24,12 +25,21 @@ open class EPCalendarPicker: UICollectionViewController {
     fileprivate var arrSelectedDates = [NSDate]()
     open var tintColor: UIColor
     
+
     open var dayDisabledTintColor: UIColor
     open var weekdayTintColor: UIColor
     open var weekendTintColor: UIColor
     open var todayTintColor: UIColor
     open var dateSelectionColor: UIColor
     open var monthTitleColor: UIColor
+    open var activityDotColor: UIColor
+    open var activityDotSelectionColor: UIColor
+    
+    /**
+     The initial date to scroll to when presenting the calendar.
+     Will fallback to today if nil
+     */
+    open var initialDate: NSDate?
     
     // new options
     open var startDate: NSDate?
@@ -63,8 +73,13 @@ open class EPCalendarPicker: UICollectionViewController {
         
         inititlizeBarButtons()
 
-        DispatchQueue.main.async { () -> Void in
-            self.scrollToToday()
+        DispatchQueue.main.async() { () -> Void in
+            if let initialDate = self.initialDate {
+                self.scrollToMonthForDate(initialDate)
+            }
+            else {
+                self.scrollToToday()
+            }
         }
         
         if backgroundImage != nil {
@@ -122,8 +137,9 @@ open class EPCalendarPicker: UICollectionViewController {
         self.init(startYear: EPDefaults.startYear, endYear: EPDefaults.endYear, multiSelection: multiSelection, selectedDates: nil)
     }
     
-    public init(startYear: Int, endYear: Int, multiSelection: Bool, selectedDates: [NSDate]?) {
+    public init(startYear: Int, endYear: Int, multiSelection: Bool, selectedDates: [NSDate]?, initialDate: NSDate? = nil) {
         
+        self.initialDate = initialDate
         self.startYear = startYear
         self.endYear = endYear
         
@@ -138,6 +154,8 @@ open class EPCalendarPicker: UICollectionViewController {
         self.dateSelectionColor = EPDefaults.dateSelectionColor
         self.monthTitleColor = EPDefaults.monthTitleColor
         self.todayTintColor = EPDefaults.todayTintColor
+        self.activityDotColor = EPDefaults.activityDotColor
+        self.activityDotSelectionColor = EPDefaults.activityDotSelectionColor
 
         //Layout creation
         let layout = UICollectionViewFlowLayout()
@@ -199,17 +217,20 @@ open class EPCalendarPicker: UICollectionViewController {
             cell.currentDate = currentDate
             cell.lblDay.text = "\(currentDate.day())"
             
-            if arrSelectedDates.filter({ $0.isDateSameDay(date: currentDate)
-            }).count > 0 && (firstDayOfThisMonth.month() == currentDate.month()) {
-
+            let selectedDaysSameAsToday = arrSelectedDates.filter({ $0.isDateSameDay(date: currentDate) })
+            
+            if selectedDaysSameAsToday.count > 0 && (firstDayOfThisMonth.month() == currentDate.month()) {
                 cell.selectedForLabelColor(dateSelectionColor)
+                cell.activityDotView.backgroundColor = self.activityDotSelectionColor
             }
             else{
                 cell.deSelectedForLabelColor(weekdayTintColor)
                
+                // Different color in weekend days
                 if cell.currentDate.isSaturday() || cell.currentDate.isSunday() {
                     cell.lblDay.textColor = weekendTintColor
                 }
+                
                 if (currentDate > nextMonthFirstDay) {
                     cell.isCellSelectable = false
                     if hideDaysFromOtherMonth {
@@ -217,9 +238,21 @@ open class EPCalendarPicker: UICollectionViewController {
                     } else {
                         cell.lblDay.textColor = self.dayDisabledTintColor
                     }
+                    cell.activityDotView.isHidden = true
                 }
+                else {
+                    if let shouldDisplayActivityDot = calendarDelegate?.epCalendarPicker?(self, shouldDisplayActivityDotForDate: currentDate) {
+                        cell.activityDotView.isHidden = !shouldDisplayActivityDot
+                        
+                        if shouldDisplayActivityDot {
+                            cell.activityDotView.backgroundColor = self.activityDotColor
+                        }
+                    }
+                }
+                
                 if currentDate.isToday() && hightlightsToday {
                     cell.setTodayCellColor(todayTintColor)
+                    cell.activityDotView.backgroundColor = self.activityDotSelectionColor
                 }
                
                 if startDate != nil {
@@ -241,6 +274,8 @@ open class EPCalendarPicker: UICollectionViewController {
             } else {
                 cell.lblDay.textColor = self.dayDisabledTintColor
             }
+        
+            cell.activityDotView.isHidden = true
         }
         
         cell.backgroundColor = UIColor.clear
@@ -296,6 +331,7 @@ open class EPCalendarPicker: UICollectionViewController {
                 arrSelectedDates.append(cell.currentDate)
                 
                 cell.selectedForLabelColor(dateSelectionColor)
+                cell.activityDotView.backgroundColor = self.activityDotSelectionColor
                 
                 if cell.currentDate.isToday() {
                     cell.setTodayCellColor(dateSelectionColor)
@@ -305,18 +341,24 @@ open class EPCalendarPicker: UICollectionViewController {
                 arrSelectedDates = arrSelectedDates.filter(){
                     return  !($0.isDateSameDay(date: cell.currentDate))
                 }
+                
                 if cell.currentDate.isSaturday() || cell.currentDate.isSunday() {
                     cell.deSelectedForLabelColor(weekendTintColor)
+                    cell.activityDotView.backgroundColor = self.activityDotColor
                 }
                 else {
                     cell.deSelectedForLabelColor(weekdayTintColor)
+                    cell.activityDotView.backgroundColor = self.activityDotColor
                 }
+                
                 if cell.currentDate.isToday() && hightlightsToday{
                     cell.setTodayCellColor(todayTintColor)
+                    cell.activityDotView.backgroundColor = self.activityDotSelectionColor
                 }
             }
+            
+            
         }
-        
     }
     
     //MARK: Button Actions
